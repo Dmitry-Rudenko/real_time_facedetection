@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Web-cam</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <script src="bower_components/jquery.facedetection/dist/jquery.facedetection.min.js"></script>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 60%;
+            margin: auto;
+        }
+        
+        .face {
+            position: absolute;
+            border: 4px solid white;
+            transition: all 2s linear;
+            
+        }
+
+    </style>
+</head>
+
+<body>
+    <video id="video" autoplay></video>
+    <button id="zahvat">Захват</button>
+    <script>
+        var videoStream = null;
+        var video = document.getElementById("video");
+
+        // Поддержка браузером
+        window.navigator = window.navigator || {};
+        navigator.getUserMedia = navigator.getUserMedia ||
+            navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia ||
+            null;
+
+        if (navigator.getUserMedia === null) {
+            document.getElementById('gum-unsupported').classList.remove('hidden');
+            document.getElementById('button-play-gum').setAttribute('disabled', 'disabled');
+            document.getElementById('button-stop-gum').setAttribute('disabled', 'disabled');
+        } else {
+            // Опера <= 12.16 принимает direct stream.
+            // Подробнее об этом здесь: http://dev.opera.com/articles/view/playing-with-html5-video-and-getusermedia-support/
+            var createSrc = window.URL ? window.URL.createObjectURL : function(stream) {
+                return stream;
+            };
+
+            // Опера <= 12.16 поддерживает только видео.
+            var audioContext = window.AudioContext ||
+                window.webkitAudioContext ||
+                null;
+            if (audioContext === null) {
+                document.getElementById('gum-partially-supported').classList.remove('hidden');
+            }
+
+            (function() {
+                // Захват аудио и видео с устройства пользователя 
+                navigator.getUserMedia({
+                        video: true,
+                        audio: true
+                    },
+                    function(stream) {
+                        videoStream = stream;
+                        // Stream the data
+                        video.src = createSrc(stream);
+                        video.play();
+                    },
+                    function(error) {
+                        console.log("Ошибка захвата видео: ", error.code);
+                    });
+            })();
+        }
+
+
+        $("#zahvat").click(function() {
+            $('#video').faceDetection({
+                complete: function(faces) {
+                    console.log(faces);
+                    for (var i = 0; i < faces.length; i++) {
+                        $('<div>', {
+                                'class': 'face',
+                                'css': {
+                                    'position': 'absolute',
+                                    'left': faces[i].x * faces[i].scaleX * 2 + 'px',
+                                    'top': faces[i].y * faces[i].scaleY + 'px',
+                                    'width': faces[i].width * faces[i].scaleX + 'px',
+                                    'height': faces[i].height * faces[i].scaleY + 'px'
+                                }
+                            })
+                            .insertAfter(this);
+                    }
+                    alert("Захват сделан");
+                }
+            });
+
+            setInterval(function() {
+                $('#video').faceDetection({
+                    complete: function(faces) {
+                        console.log(faces);
+                        for (var i = 0; i < faces.length; i++) {
+                            $(".face").css({
+                                'left': faces[i].x * faces[i].scaleX * 2 + 'px',
+                                'top': faces[i].y * faces[i].scaleY + 'px',
+                                'width': faces[i].width * faces[i].scaleX + 'px',
+                                'height': faces[i].height * faces[i].scaleY + 'px'
+                            })
+                        }
+                    }
+                });
+            }, 1000);
+        })
+
+    </script>
+</body>
+
+</html>
